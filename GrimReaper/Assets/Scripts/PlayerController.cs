@@ -21,7 +21,7 @@ public class PlayerController : Subject
         }
     }
 
-    //GrimReaper_LossofMemories _inputs;
+    GrimReaper_LossofMemories _inputs;
     Vector2 _move;
     //bool isFacingRight = true;
     //bool isOgKey;
@@ -34,6 +34,7 @@ public class PlayerController : Subject
     [SerializeField] Vector3 initialPosition;
 
     [Header("Joystick")]
+    [SerializeField] bool isUsingJoystick = true;
     [SerializeField] private Joystick _joystick;
 
     [Header("Movements")]
@@ -66,8 +67,15 @@ public class PlayerController : Subject
     {
         _instance = this;
         _controller = GetComponent<CharacterController>();
+        _inputs = new GrimReaper_LossofMemories();
+        _inputs.Player.Move.performed += context => _move = context.ReadValue<Vector2>();
+        _inputs.Player.Move.canceled += context => _move = Vector2.zero;
 
     }
+
+    void OnEnable() => _inputs.Enable();
+
+    void OnDisable() => _inputs.Disable();
 
     void Start()
     {
@@ -96,12 +104,25 @@ public class PlayerController : Subject
 
     void FixedUpdate()
     {
-        _move = _joystick.Direction;
+
 
         _isGrounded = Physics.CheckSphere(_groundCheck.position, _groundRadius, _groundMask);
         if (_isGrounded && _velocity.y < 0.0f)
         {
             _velocity.y = -2.0f;
+        }
+
+        //_move = _joystick.Direction;
+        if (isUsingJoystick)
+        {
+            _move = _joystick.Direction;
+
+        }
+        else
+        {
+            Debug.Log("Using keyboard");
+            _inputs.Player.Jump.performed += context => Jump();
+            _inputs.Player.Fire.performed += context => Shoot();
         }
 
         // Create movement vector, keeping Z component as 0
@@ -119,11 +140,11 @@ public class PlayerController : Subject
         transform.position = position;
 
         // Update _lastHorizontalInput if there's any horizontal input
-        float horizontalInput = Input.GetAxis("Horizontal");
-        if (horizontalInput != 0)
-        {
-            //_lastHorizontalInput = horizontalInput;
-        }
+        //float horizontalInput = Input.GetAxis("Horizontal");
+        //if (horizontalInput != 0)
+        //{
+        //    //_lastHorizontalInput = horizontalInput;
+        //}
 
         countEnemy();
         if (DataKeeper.Instance.isTutorialDone == true)
