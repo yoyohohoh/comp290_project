@@ -15,6 +15,7 @@ TagManager:
   - Key
   - Item
   - Tick
+  - SuperShield
   layers:
   - Default
   - TransparentFX

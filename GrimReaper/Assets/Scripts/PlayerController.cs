@@ -229,12 +229,21 @@ public class PlayerController : Subject
     private void OnTriggerEnter(Collider other)
     {
         Debug.Log("Player touch " + other.name);
-        if (other.gameObject.CompareTag("Enemy"))
+        if (other.gameObject.CompareTag("SuperShield"))
+        {
+            Destroy(other.gameObject);
+        }
+            if (other.gameObject.CompareTag("Enemy"))
         {
             //when player touch enemy, player's health will decrease
             Debug.Log("Player hit by enemy");
-            SoundController.instance.Play("EnemyAttack");
-            GamePlayUIController.Instance.UpdateHealth(-1.0f);
+            if (GameObject.FindGameObjectsWithTag("SuperShield").Length != 0)
+            {
+                SoundController.instance.Play("EnemyAttack");
+
+                GamePlayUIController.Instance.UpdateHealth(-1.0f);
+            }
+
             //connect to datakeeper (stage 3)
         }
 

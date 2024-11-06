@@ -23,9 +23,14 @@ public class CountingEnemy : MonoBehaviour
         EnenmyAmount = enemies.Length;
         enemyCount.text = $"Remaining Enemy: {EnenmyAmount}/{totalEnenmyAmount}";
 
-        if(EnenmyAmount <= 0)
+        if (EnenmyAmount <= 0)
         {
             enemyCount.text = $"You killed all the enemies!";
+        }
+
+        if (GameObject.FindGameObjectsWithTag("SuperShield").Length == 0)
+        {
+            enemyCount.text = $"Special Power: no one can hurt you now!";
         }
     }
 }
