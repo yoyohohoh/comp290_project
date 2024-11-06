@@ -22,5 +22,10 @@ public class CountingEnemy : MonoBehaviour
         GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
         EnenmyAmount = enemies.Length;
         enemyCount.text = $"Remaining Enemy: {EnenmyAmount}/{totalEnenmyAmount}";
+
+        if(EnenmyAmount <= 0)
+        {
+            enemyCount.text = $"You killed all the enemies!";
+        }
     }
 }
