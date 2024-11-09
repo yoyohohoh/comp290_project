@@ -11,7 +11,7 @@ public class MarkerController : MonoBehaviour
         if(target != null)
         {
             transform.position = new Vector3(target.transform.position.x, target.transform.position.y, target.transform.position.z);
-            transform.rotation = Quaternion.Euler(90, 0, 0);
+            transform.rotation = Quaternion.Euler(-180, 0, 0);
         }
         else
         {
