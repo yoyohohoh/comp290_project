@@ -106,7 +106,7 @@ public class PlayerAnimation : MonoBehaviour
                 playerModel.transform.rotation = Quaternion.Euler(0, 90, 0);
                 if (playerMarker != null)
                 {
-                    playerMarker.transform.rotation = Quaternion.Euler(-180, 0, -90);
+                    playerMarker.transform.rotation = Quaternion.Euler(0, 0, -90);
 
                     playerSight.transform.position = new Vector3(playerMarker.transform.position.x, playerMarker.transform.position.y, playerMarker.transform.position.z);
 
@@ -120,7 +120,7 @@ public class PlayerAnimation : MonoBehaviour
                 playerModel.transform.rotation = Quaternion.Euler(0, -90, 0);
                 if (playerMarker != null)
                 {
-                    playerMarker.transform.rotation = Quaternion.Euler(-180, 0, 90);
+                    playerMarker.transform.rotation = Quaternion.Euler(0, 0, 90);
                     playerSight.transform.position = new Vector3(playerMarker.transform.position.x - 2.0f, playerMarker.transform.position.y, playerMarker.transform.position.z);
 
                 }
