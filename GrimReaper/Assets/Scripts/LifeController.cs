@@ -49,7 +49,7 @@ public class LifeController : MonoBehaviour
         if (GamePlayUIController.Instance.health.GetComponent<Slider>().value == 0)
         {
             life--;
-            PlayerController.Instance.InitiatePlayerPosition();
+            PlayerController.Instance.InitializePlayerPosition();
             GamePlayUIController.Instance.UpdateHealth(100.0f);
             SoundController.instance.Play("Reborn");
         }

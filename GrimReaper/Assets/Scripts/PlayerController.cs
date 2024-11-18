@@ -1,279 +1,203 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.Scripting.APIUpdating;
-using UnityEngine.UI;
-using UnityEngine.UIElements;
-using static UnityEditor.Experimental.GraphView.GraphView;
 
-//To make sure the object contains the required components
 [RequireComponent(typeof(CharacterController))]
-
 public class PlayerController : Subject
 {
-    public static PlayerController _instance;
-    public static PlayerController Instance
-    {
-        get
-        {
-            return _instance;
-        }
-    }
+    public static PlayerController Instance { get; private set; }
 
-    GrimReaper_LossofMemories _inputs;
-    Vector2 _move;
-    //bool isFacingRight = true;
-    //bool isOgKey;
-    public bool isjumped;
-    public bool isAttacking;
-
+    private GrimReaper_LossofMemories _inputs;
+    private Vector2 _move;
+    public bool IsJumped { get; private set; }
+    public bool IsAttacking { get; private set; }
 
     [Header("Character Controller")]
-    [SerializeField] CharacterController _controller;
-    [SerializeField] Vector3 initialPosition;
+    [SerializeField] private CharacterController _controller;
+    [SerializeField] private Vector3 initialPosition;
 
     [Header("Joystick")]
-    [SerializeField] bool isUsingJoystick = true;
+    [SerializeField] private bool isUsingJoystick = true;
     [SerializeField] private Joystick _joystick;
 
-    [Header("Movements")]
-    [SerializeField] float _speed;
-    [SerializeField] float _gravity = -30.0f;
-    [SerializeField] float _jumpHeight = 3.0f;
-    [SerializeField] Vector3 _velocity;
-    [SerializeField] float bounceForce = 5.0f;    
+    [Header("Movement")]
+    [SerializeField] private float _speed;
+    [SerializeField] private float _gravity = -30.0f;
+    [SerializeField] private float _jumpHeight = 3.0f;
+    private Vector3 _velocity;
+    [SerializeField] private float bounceForce = 5.0f;
 
     [Header("Ground Detection")]
-    [SerializeField] Transform _groundCheck;
-    [SerializeField] float _groundRadius = 0.5f;
-    [SerializeField] LayerMask _groundMask;
-    [SerializeField] bool _isGrounded;
+    [SerializeField] private Transform _groundCheck;
+    [SerializeField] private float _groundRadius = 0.5f;
+    [SerializeField] private LayerMask _groundMask;
+    private bool _isGrounded;
 
     [Header("Bounce Detection")]
-    public string bounceTag = "BounceObject"; 
+    [SerializeField] private string bounceTag = "BounceObject";
 
     [Header("Shooting")]
-    [SerializeField] GameObject playerSight;
-    [SerializeField] GameObject playerMarker;
-
+    [SerializeField] private GameObject playerSight;
     [SerializeField] private float _projectileForce = 0f;
-    [SerializeField] public Quest quest1, quest2, quest3;
+    [SerializeField] private Quest quest1, quest2, quest3;
 
-    //[SerializeField] private float _lastHorizontalInput = 1.0f;
-
-
-    void Awake()
+    private void Awake()
     {
-        _instance = this;
+        Instance = this;
         _controller = GetComponent<CharacterController>();
         _inputs = new GrimReaper_LossofMemories();
+
         _inputs.Player.Move.performed += context => _move = context.ReadValue<Vector2>();
         _inputs.Player.Move.canceled += context => _move = Vector2.zero;
-
+        _inputs.Player.Jump.performed += context => Jump();
+        _inputs.Player.Fire.performed += context => Attack();
     }
 
-    void OnEnable() => _inputs.Enable();
+    private void OnEnable() => _inputs.Enable();
+    private void OnDisable() => _inputs.Disable();
 
-    void OnDisable() => _inputs.Disable();
-
-    void Start()
+    private void Start()
     {
         quest1 = new Quest(1, "Tutorial", QuestState.Active);
         quest2 = new Quest(2, "CollectItem", QuestState.Null);
         quest3 = new Quest(3, "KillEnemy", QuestState.Null);
+
         NotifyObservers(QuestState.Pending, quest2);
         NotifyObservers(QuestState.Pending, quest3);
-        //player initial position
-        if (DataKeeper.Instance.save1 != new Vector3 (0f, 0f, 0f))
-        {
-            _controller.enabled = false;
-            transform.position = DataKeeper.Instance.save1;
-            _controller.enabled = true;
-        }
-        else
-        {
-            InitiatePlayerPosition();
-        }
-        
-        isjumped = false;
-        isAttacking = false;
 
-
+        InitializePlayerPosition();
+        IsJumped = false;
+        IsAttacking = false;
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
+        CheckGroundStatus();
+        HandleMovement();
 
-
-        _isGrounded = Physics.CheckSphere(_groundCheck.position, _groundRadius, _groundMask);
-        if (_isGrounded && _velocity.y < 0.0f)
-        {
-            _velocity.y = -2.0f;
-        }
-
-        //_move = _joystick.Direction;
-        if (isUsingJoystick)
-        {
-            _move = _joystick.Direction;
-
-        }
-        else
-        {
-            Debug.Log("Using keyboard");
-            _inputs.Player.Jump.performed += context => Jump();
-            _inputs.Player.Fire.performed += context => Shoot();
-        }
-
-        // Create movement vector, keeping Z component as 0
-        //Vector3 movement = new Vector3(_move.x, 0.0f, 0.0f) * _speed * Time.fixedDeltaTime;
-        Vector3 movement = new Vector3(_move.x * _speed * Time.fixedDeltaTime, 0.0f, 0.0f);
-        _controller.Move(movement);
-        _velocity.y += _gravity * Time.fixedDeltaTime;
-
-        // Move the player vertically (jumping/falling), without affecting the Z-axis
-        _controller.Move(new Vector3(0, _velocity.y, 0) * Time.fixedDeltaTime);
-
-        //Fixed Z position
-        Vector3 position = transform.position;
-        position.z = initialPosition.z;
-        transform.position = position;
-
-        // Update _lastHorizontalInput if there's any horizontal input
-        //float horizontalInput = Input.GetAxis("Horizontal");
-        //if (horizontalInput != 0)
-        //{
-        //    //_lastHorizontalInput = horizontalInput;
-        //}
-
-        countEnemy();
-        if (DataKeeper.Instance.isTutorialDone == true)
+        if (DataKeeper.Instance.isTutorialDone)
         {
             NotifyObservers(QuestState.Completed, quest1);
             NotifyObservers(QuestState.Active, quest2);
             NotifyObservers(QuestState.Active, quest3);
         }
 
-
+        CountEnemies();
     }
 
-
-    void OnDrawGizmos()
-    {
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(_groundCheck.position, _groundRadius);
-    }
-
-    public void InitiatePlayerPosition()
+    public void InitializePlayerPosition()
     {
         _controller.enabled = false;
-        transform.position = initialPosition;
+        transform.position = DataKeeper.Instance.save1 != Vector3.zero ? DataKeeper.Instance.save1 : initialPosition;
         _controller.enabled = true;
     }
 
-    public void Jump() // method will be called from clicking jump button
+    private void CheckGroundStatus()
+    {
+        _isGrounded = Physics.CheckSphere(_groundCheck.position, _groundRadius, _groundMask);
+        if (_isGrounded && _velocity.y < 0.0f)
+        {
+            _velocity.y = -2.0f;
+        }
+    }
+
+    private void HandleMovement()
+    {
+        if (isUsingJoystick)
+        {
+            _move = _joystick.Direction;
+        }
+
+        if (_move == Vector2.zero)
+        {
+            Idle();
+        }
+        else
+        {
+            Run();
+        }
+
+        _velocity.y += _gravity * Time.fixedDeltaTime;
+        _controller.Move(new Vector3(0, _velocity.y, 0) * Time.fixedDeltaTime);
+
+        // Keep player at fixed Z position
+        Vector3 position = transform.position;
+        position.z = initialPosition.z;
+        transform.position = position;
+    }
+
+    private void Idle()
+    {
+        // Add idle behavior or animations here
+    }
+
+    private void Run()
+    {
+        Vector3 movement = new Vector3(_move.x * _speed * Time.fixedDeltaTime, 0.0f, 0.0f);
+        _controller.Move(movement);
+    }
+
+    public void Jump()
     {
         if (_isGrounded)
         {
-            isjumped = true;
+            IsJumped = true;
             SoundController.instance.Play("Jump");
             _velocity.y = Mathf.Sqrt(_jumpHeight * -2.0f * _gravity);
         }
     }
 
-    public void Shoot() // method will be called from clicking shoot button
+    public void Attack()
     {
         SoundController.instance.Play("Attack");
-        isAttacking = true;
+        IsAttacking = true;
 
-        
-
-        //projectile pool       
         var projectile = ProjectilePoolManager.Instance.Get();
-        if(projectile != null)
+        if (projectile != null)
         {
-            projectile.transform.SetPositionAndRotation(playerSight.transform.position, Quaternion.Euler(playerSight.transform.rotation.x, playerSight.transform.rotation.y + 90, playerSight.transform.rotation.z));
+            projectile.transform.SetPositionAndRotation(playerSight.transform.position, Quaternion.identity);
             projectile.gameObject.SetActive(true);
-            //projectile.gameObject.GetComponent<Rigidbody>().AddForce(projectile.transform.forward * _projectileForce, ForceMode.Impulse);
 
-            //if the sight is facing right, the projectile will move to the right
-
-            //projectile.gameObject.GetComponent<Rigidbody>().AddForce(-projectile.transform.forward * _projectileForce, ForceMode.Impulse);
-
-            if (_move.x >= 0)
-            {
-                //Debug.Log("Player Sight: " + playerSight.transform.position.x);
-                projectile.gameObject.GetComponent<Rigidbody>().AddForce(projectile.transform.forward * _projectileForce, ForceMode.Impulse);
-            }
-            else if (_move.x < 0)
-            {
-                //Debug.Log("Player Sight: " + playerSight.transform.position.x);
-                projectile.gameObject.GetComponent<Rigidbody>().AddForce(-projectile.transform.forward * _projectileForce, ForceMode.Impulse);
-            }
+            Vector3 forceDirection = _move.x >= 0 ? projectile.transform.forward : -projectile.transform.forward;
+            projectile.GetComponent<Rigidbody>().AddForce(forceDirection * _projectileForce, ForceMode.Impulse);
         }
-        
-        
-
-
-
-
-
-
     }
-
-    //private void SendMessage(InputAction.CallbackContext context)
-    //{
-    //    Debug.Log($"Move Performed x = {context.ReadValue<Vector2>().x}, y = {context.ReadValue<Vector2>().y}");
-    //}
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log("Player touch " + other.name);
-        if (other.gameObject.CompareTag("SuperShield"))
+        if (other.CompareTag("SuperShield"))
         {
             Destroy(other.gameObject);
         }
-            if (other.gameObject.CompareTag("Enemy"))
+
+        if (other.CompareTag("Enemy") && GameObject.FindGameObjectsWithTag("SuperShield").Length > 0)
         {
-            //when player touch enemy, player's health will decrease
-            Debug.Log("Player hit by enemy");
-            if (GameObject.FindGameObjectsWithTag("SuperShield").Length != 0)
-            {
-                SoundController.instance.Play("EnemyAttack");
-
-                GamePlayUIController.Instance.UpdateHealth(-1.0f);
-            }
-
-            //connect to datakeeper (stage 3)
+            SoundController.instance.Play("EnemyAttack");
+            GamePlayUIController.Instance.UpdateHealth(-1.0f);
         }
 
-        
-        if (quest2.state == QuestState.Active && other.gameObject.CompareTag("Item") && UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex == 1)
+        if (quest2.state == QuestState.Active && other.CompareTag("Item") && UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex == 1)
         {
-                NotifyObservers(QuestState.Completed, quest2);
+            NotifyObservers(QuestState.Completed, quest2);
         }
     }
+
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
         if (hit.gameObject.CompareTag(bounceTag) && _isGrounded)
-        {          
-            Debug.Log("Player hit bounce object");
+        {
             _velocity.y = Mathf.Sqrt(bounceForce * -2f * _gravity);
             SoundController.instance.Play("Jump");
         }
     }
 
-    public void countEnemy()
+    private void CountEnemies()
     {
-
         GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
-        
+
         if (quest3.state == QuestState.Active && enemies.Length == 1 && UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex == 1)
         {
             NotifyObservers(QuestState.Completed, quest3);
         }
-
     }
-
-
 }
