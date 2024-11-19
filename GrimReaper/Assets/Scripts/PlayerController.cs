@@ -22,6 +22,8 @@ public class PlayerController : Subject
 
     [Header("Movement")]
     [SerializeField] private float _speed;
+    [SerializeField] private float _walkSpeed = 2.0f;
+    [SerializeField] private float _runSpeed = 5.0f;
     [SerializeField] private float _gravity = -30.0f;
     [SerializeField] private float _jumpHeight = 3.0f;
     private Vector3 _velocity;
@@ -41,6 +43,10 @@ public class PlayerController : Subject
     [SerializeField] private float _projectileForce = 0f;
     [SerializeField] private Quest quest1, quest2, quest3;
 
+    // References
+    private CharacterController controller;
+    private Animator animator;
+
     private void Awake()
     {
         Instance = this;
@@ -58,6 +64,9 @@ public class PlayerController : Subject
 
     private void Start()
     {
+        controller = GetComponent<CharacterController>();
+        animator = GetComponentInChildren<Animator>();
+
         quest1 = new Quest(1, "Tutorial", QuestState.Active);
         quest2 = new Quest(2, "CollectItem", QuestState.Null);
         quest3 = new Quest(3, "KillEnemy", QuestState.Null);
@@ -83,6 +92,17 @@ public class PlayerController : Subject
         }
 
         CountEnemies();
+    }
+
+    private void CountEnemies()
+    {
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+
+        if (quest3.state == QuestState.Active && enemies.Length == 1 &&
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex == 1)
+        {
+            NotifyObservers(QuestState.Completed, quest3);
+        }
     }
 
     public void InitializePlayerPosition()
@@ -114,9 +134,10 @@ public class PlayerController : Subject
         }
         else
         {
-            Run();
+            Move();
         }
 
+        // Apply gravity
         _velocity.y += _gravity * Time.fixedDeltaTime;
         _controller.Move(new Vector3(0, _velocity.y, 0) * Time.fixedDeltaTime);
 
@@ -126,15 +147,43 @@ public class PlayerController : Subject
         transform.position = position;
     }
 
+    private void Move()
+    {
+        if (IsRunning())
+        {
+            Run();
+        }
+        else
+        {
+            Walk();
+        }
+    }
+
+    private bool IsRunning()
+    {
+        // Logic to determine if the player should run (e.g., holding a sprint button)
+        return _move.magnitude > 0.7f;
+    }
+
     private void Idle()
     {
-        // Add idle behavior or animations here
+        animator.SetFloat("Speed", 0);
+    }
+
+    private void Walk()
+    {
+        Vector3 movement = new Vector3(_move.x * _walkSpeed * Time.fixedDeltaTime, 0.0f, 0.0f);
+        _controller.Move(movement);
+        animator.SetFloat("Speed", 0.5f);
+        Debug.Log("Walk");
     }
 
     private void Run()
     {
-        Vector3 movement = new Vector3(_move.x * _speed * Time.fixedDeltaTime, 0.0f, 0.0f);
+        Vector3 movement = new Vector3(_move.x * _runSpeed * Time.fixedDeltaTime, 0.0f, 0.0f);
         _controller.Move(movement);
+        animator.SetFloat("Speed", 1f);
+        Debug.Log("Run");
     }
 
     public void Jump()
@@ -160,44 +209,6 @@ public class PlayerController : Subject
 
             Vector3 forceDirection = _move.x >= 0 ? projectile.transform.forward : -projectile.transform.forward;
             projectile.GetComponent<Rigidbody>().AddForce(forceDirection * _projectileForce, ForceMode.Impulse);
-        }
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("SuperShield"))
-        {
-            Destroy(other.gameObject);
-        }
-
-        if (other.CompareTag("Enemy") && GameObject.FindGameObjectsWithTag("SuperShield").Length > 0)
-        {
-            SoundController.instance.Play("EnemyAttack");
-            GamePlayUIController.Instance.UpdateHealth(-1.0f);
-        }
-
-        if (quest2.state == QuestState.Active && other.CompareTag("Item") && UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex == 1)
-        {
-            NotifyObservers(QuestState.Completed, quest2);
-        }
-    }
-
-    private void OnControllerColliderHit(ControllerColliderHit hit)
-    {
-        if (hit.gameObject.CompareTag(bounceTag) && _isGrounded)
-        {
-            _velocity.y = Mathf.Sqrt(bounceForce * -2f * _gravity);
-            SoundController.instance.Play("Jump");
-        }
-    }
-
-    private void CountEnemies()
-    {
-        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
-
-        if (quest3.state == QuestState.Active && enemies.Length == 1 && UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex == 1)
-        {
-            NotifyObservers(QuestState.Completed, quest3);
         }
     }
 }
