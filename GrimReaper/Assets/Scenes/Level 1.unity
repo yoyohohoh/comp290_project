@@ -253,7 +253,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2050679471}
-  - {fileID: 1090816311}
   - {fileID: 874060112}
   m_Father: {fileID: 143576115}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -8766,12 +8765,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1090816310}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.11569124, y: 0.046687175, z: 0.8717141, w: 0.47386754}
-  m_LocalPosition: {x: -66.79242, y: -17.065996, z: 8.778521}
+  m_LocalRotation: {x: 0.11569123, y: 0.046687152, z: 0.8717141, w: 0.4738675}
+  m_LocalPosition: {x: 115.02495, y: -45.80245, z: 8.480212}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 9301888}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 1.619, y: 14.244, z: 123.145}
 --- !u!108 &1090816312
 Light:
@@ -12622,7 +12621,7 @@ Transform:
   m_GameObject: {fileID: 1579118283}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1, y: 1, z: 0}
+  m_LocalPosition: {x: 1, y: 0.2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -14866,7 +14865,7 @@ MonoBehaviour:
     m_Bits: 8
   bounceTag: BounceObject
   playerSight: {fileID: 1579118283}
-  _projectileForce: 15
+  _projectileForce: 5
 --- !u!143 &1972109901
 CharacterController:
   m_ObjectHideFlags: 0
@@ -16091,6 +16090,7 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 1090816311}
   - {fileID: 920072573}
   - {fileID: 62568658}
   - {fileID: 480833175}

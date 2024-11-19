@@ -79,6 +79,14 @@ public class PlayerController : Subject
         IsAttacking = false;
     }
 
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.K))
+        {
+            Attack();
+        }
+    }
+
     private void FixedUpdate()
     {
         CheckGroundStatus();
@@ -157,7 +165,16 @@ public class PlayerController : Subject
         {
             Walk();
         }
+
+        // Flip the character horizontally based on movement direction
+        if (_move.x != 0)
+        {
+            Vector3 scale = transform.localScale;
+            scale.x = _move.x > 0 ? Mathf.Abs(scale.x) : -Mathf.Abs(scale.x);
+            transform.localScale = scale;
+        }
     }
+
 
     private bool IsRunning()
     {
@@ -167,14 +184,14 @@ public class PlayerController : Subject
 
     private void Idle()
     {
-        animator.SetFloat("Speed", 0);
+        animator.SetFloat("Speed", 0, 0.1f, Time.deltaTime);
     }
 
     private void Walk()
     {
         Vector3 movement = new Vector3(_move.x * _walkSpeed * Time.fixedDeltaTime, 0.0f, 0.0f);
         _controller.Move(movement);
-        animator.SetFloat("Speed", 0.5f);
+        animator.SetFloat("Speed", 0.5f, 0.1f, Time.deltaTime);
         Debug.Log("Walk");
     }
 
@@ -182,7 +199,7 @@ public class PlayerController : Subject
     {
         Vector3 movement = new Vector3(_move.x * _runSpeed * Time.fixedDeltaTime, 0.0f, 0.0f);
         _controller.Move(movement);
-        animator.SetFloat("Speed", 1f);
+        animator.SetFloat("Speed", 1, 0.1f, Time.deltaTime);
         Debug.Log("Run");
     }
 
@@ -190,25 +207,51 @@ public class PlayerController : Subject
     {
         if (_isGrounded)
         {
+            animator.SetTrigger("Jump");
+
             IsJumped = true;
             SoundController.instance.Play("Jump");
             _velocity.y = Mathf.Sqrt(_jumpHeight * -2.0f * _gravity);
         }
     }
-
     public void Attack()
     {
+        animator.SetTrigger("Attack");
+
+        // Play sound and set IsAttacking to true
         SoundController.instance.Play("Attack");
         IsAttacking = true;
 
+        // Get and activate the projectile
         var projectile = ProjectilePoolManager.Instance.Get();
         if (projectile != null)
         {
+            // Set the position and rotation
             projectile.transform.SetPositionAndRotation(playerSight.transform.position, Quaternion.identity);
             projectile.gameObject.SetActive(true);
 
-            Vector3 forceDirection = _move.x >= 0 ? projectile.transform.forward : -projectile.transform.forward;
-            projectile.GetComponent<Rigidbody>().AddForce(forceDirection * _projectileForce, ForceMode.Impulse);
+            // Set the projectile size to twice its original
+            projectile.transform.localScale = Vector3.one * 2;
+
+            // Determine the direction based on player's facing
+            Vector3 forceDirection = transform.right; // Default to facing right
+            if (_move.x < 0) // If player is moving left, adjust direction
+            {
+                forceDirection = -transform.right;
+            }
+
+            // Ensure proper forward shooting if not moving
+            if (_move.x == 0)
+            {
+                // Use player’s current facing direction (e.g., from a variable tracking it)
+                forceDirection = transform.localScale.x > 0 ? transform.right : -transform.right;
+            }
+
+            // Apply force to the projectile
+            projectile.GetComponent<Rigidbody>().velocity = forceDirection * _projectileForce;
         }
     }
+
+
+
 }
