@@ -193,7 +193,6 @@ public class PlayerController : Subject
         Vector3 movement = new Vector3(_move.x * _walkSpeed * Time.fixedDeltaTime, 0.0f, 0.0f);
         _controller.Move(movement);
         animator.SetFloat("Speed", 0.5f, 0.1f, Time.deltaTime);
-        Debug.Log("Walk");
     }
 
     private void Run()
@@ -201,7 +200,6 @@ public class PlayerController : Subject
         Vector3 movement = new Vector3(_move.x * _runSpeed * Time.fixedDeltaTime, 0.0f, 0.0f);
         _controller.Move(movement);
         animator.SetFloat("Speed", 1, 0.1f, Time.deltaTime);
-        Debug.Log("Run");
     }
 
     public void Jump()
@@ -242,7 +240,6 @@ public class PlayerController : Subject
             int ctr = 1;
             foreach (GameObject enemy in enemies)
             {
-                Debug.Log("enemy "+ctr++ + " found");
                 float distance = Vector3.Distance(transform.position, enemy.transform.position);
                 if (distance < closestDistance)
                 {
@@ -255,12 +252,10 @@ public class PlayerController : Subject
             HomingProjectile homingScript = projectile.GetComponent<HomingProjectile>();
             if (homingScript != null && nearestEnemy != null)
             {
-                Debug.Log("Enemy found!");
                 homingScript.SetTarget(nearestEnemy);
             }
             else
             {
-                Debug.Log("No Enemy found!");
                 // If no target, shoot forward based on player's facing direction
                 Rigidbody rb = projectile.GetComponent<Rigidbody>();
                 if (rb != null)
@@ -269,6 +264,26 @@ public class PlayerController : Subject
                     rb.velocity = shootDirection * _projectileForce;
                 }
             }
+        }
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        Debug.Log("On Tigger = "+ other.name);
+        if (other.CompareTag("SuperShield"))
+        {
+            Destroy(other.gameObject);
+        }
+
+        if (other.CompareTag("Enemy") && GameObject.FindGameObjectsWithTag("SuperShield").Length > 0)
+        {
+            SoundController.instance.Play("EnemyAttack");
+            GamePlayUIController.Instance.UpdateHealth(-1.0f);
+        }
+
+        if (quest2.state == QuestState.Active && other.CompareTag("Item") && UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex == 1)
+        {
+            NotifyObservers(QuestState.Completed, quest2);
         }
     }
 }
