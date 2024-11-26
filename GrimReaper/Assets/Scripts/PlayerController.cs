@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -233,25 +234,41 @@ public class PlayerController : Subject
             // Set the projectile size to twice its original
             projectile.transform.localScale = Vector3.one * 2;
 
-            // Determine the direction based on player's facing
-            Vector3 forceDirection = transform.right; // Default to facing right
-            if (_move.x < 0) // If player is moving left, adjust direction
+            // Find the nearest enemy
+            GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+            Transform nearestEnemy = null;
+            float closestDistance = Mathf.Infinity;
+
+            int ctr = 1;
+            foreach (GameObject enemy in enemies)
             {
-                forceDirection = -transform.right;
+                Debug.Log("enemy "+ctr++ + " found");
+                float distance = Vector3.Distance(transform.position, enemy.transform.position);
+                if (distance < closestDistance)
+                {
+                    closestDistance = distance;
+                    nearestEnemy = enemy.transform;
+                }
             }
 
-            // Ensure proper forward shooting if not moving
-            if (_move.x == 0)
+            // Assign the nearest enemy as the target for the homing projectile
+            HomingProjectile homingScript = projectile.GetComponent<HomingProjectile>();
+            if (homingScript != null && nearestEnemy != null)
             {
-                // Use player’s current facing direction (e.g., from a variable tracking it)
-                forceDirection = transform.localScale.x > 0 ? transform.right : -transform.right;
+                Debug.Log("Enemy found!");
+                homingScript.SetTarget(nearestEnemy);
             }
-
-            // Apply force to the projectile
-            projectile.GetComponent<Rigidbody>().velocity = forceDirection * _projectileForce;
+            else
+            {
+                Debug.Log("No Enemy found!");
+                // If no target, shoot forward based on player's facing direction
+                Rigidbody rb = projectile.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    Vector3 shootDirection = transform.localScale.x > 0 ? transform.right : -transform.right;
+                    rb.velocity = shootDirection * _projectileForce;
+                }
+            }
         }
     }
-
-
-
 }
