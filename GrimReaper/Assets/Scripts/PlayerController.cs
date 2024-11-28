@@ -285,5 +285,10 @@ public class PlayerController : Subject
         {
             NotifyObservers(QuestState.Completed, quest2);
         }
+
+        if (other.gameObject.name == "Toon Chicken (3)")
+        {
+            InitializePlayerPosition();
+        }
     }
 }
