@@ -56,8 +56,8 @@ public class PlayerController : Subject
 
         _inputs.Player.Move.performed += context => _move = context.ReadValue<Vector2>();
         _inputs.Player.Move.canceled += context => _move = Vector2.zero;
-        _inputs.Player.Jump.performed += context => Jump();
-        _inputs.Player.Fire.performed += context => Attack();
+        //_inputs.Player.Jump.performed += context => Jump();
+        //_inputs.Player.Fire.performed += context => Attack();
     }
 
     private void OnEnable() => _inputs.Enable();
@@ -286,9 +286,12 @@ public class PlayerController : Subject
             NotifyObservers(QuestState.Completed, quest2);
         }
 
-        if (other.gameObject.name == "Toon Chicken (3)")
+        if (other.gameObject.CompareTag("BounceObject"))
         {
-            InitializePlayerPosition();
+            float originalJumHeight = _jumpHeight;
+            _jumpHeight = 30f;
+            Jump();
+            _jumpHeight = originalJumHeight;
         }
     }
 }
