@@ -14855,7 +14855,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _controller: {fileID: 1972109901}
   initialPosition: {x: 120, y: -50, z: 0}
-  isUsingJoystick: 0
+  isUsingJoystick: 1
   _joystick: {fileID: 1145476495}
   _speed: 9
   _walkSpeed: 2
